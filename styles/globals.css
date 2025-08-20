@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* TODO: update to exact adamstoolhouse.com colors */
+  --brand-primary: #0b5fa5;
+  --brand-secondary: #f29f05;
+  --brand-accent: #0a2540;
+  --brand-text: #0f172a;
+  --brand-bg: #ffffff;
+}
+
+html, body {
+  @apply bg-brand-bg text-brand-text;
+  font-feature-settings: "cv02","cv03","cv04","cv11";
+}
+
+.container-narrow { @apply container max-w-6xl; }
+
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-md bg-brand-primary px-4 py-2 text-white font-medium hover:opacity-95 active:opacity-90 transition;
+}
+
+.btn-outline {
+  @apply inline-flex items-center justify-center rounded-md border border-brand-primary px-4 py-2 text-brand-primary hover:bg-brand-primary hover:text-white transition;
+}
