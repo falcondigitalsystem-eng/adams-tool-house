@@ -1,49 +1,88 @@
-// app/products/page.tsx
+// app/products/page.js
+export const revalidate = 60; // ISR: refresh data every 60s
 
-import Link from "next/link";
+const CMS = process.env.NEXT_PUBLIC_CMS_URL;
 
-export const metadata = {
-  title: "Products | Adams Tool House",
-  description:
-    "Browse industrial tools, welding, safety gear, and more from Adams Tool House.",
-};
+// Helper: load categories & brands from Strapi with safe fallbacks
+async function getData() {
+  const safeFetch = async (url) => {
+    try {
+      const res = await fetch(url, { next: { revalidate: 60 } });
+      if (!res.ok) return { data: [] };
+      return res.json();
+    } catch {
+      return { data: [] };
+    }
+  };
 
-export default function ProductsPage() {
+  const catURL = `${CMS}/api/categories?fields[0]=name&sort=name`;
+  const brandURL = `${CMS}/api/brands?fields[0]=name&sort=name`;
+
+  const [{ data: cats }, { data: brands }] = await Promise.all([
+    safeFetch(catURL),
+    safeFetch(brandURL),
+  ]);
+
+  // Fallbacks if CMS is empty / offline
+  const categoryNames =
+    cats?.map((c) => c?.attributes?.name).filter(Boolean)?.slice(0, 12) ??
+    ["Power Tools", "Welding", "Safety"];
+
+  const brandNames =
+    brands?.map((b) => b?.attributes?.name).filter(Boolean)?.slice(0, 12) ??
+    ["Bosch", "Makita", "Dewalt", "3M"];
+
+  return { categoryNames, brandNames };
+}
+
+export default async function ProductsPage() {
+  const { categoryNames, brandNames } = await getData();
+
   return (
-    <main className="max-w-6xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-semibold mb-4">Products</h1>
-      <p className="text-slate-600 mb-8">
-        Our full product catalog is coming online. In the meantime, explore our
-        top categories or contact us for a quote.
+    <div className="container-narrow py-12 space-y-10">
+      <h1 className="text-3xl font-semibold">Products</h1>
+      <p className="opacity-80">
+        Our full product catalog is coming online. Explore top categories or contact us for a quote.
       </p>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-2xl border p-5">
-          <h2 className="text-lg font-medium">Power Tools</h2>
-          <p className="text-sm text-slate-600">
-            Drills, saws, grinders, and more.
-          </p>
+      {/* Categories */}
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">Top Categories</h2>
+        <div className="grid md:grid-cols-3 gap-4">
+          {categoryNames.map((name) => (
+            <a
+              key={name}
+              href="/categories"
+              className="block rounded-xl border p-6 hover:shadow-sm transition"
+            >
+              <div className="font-medium">{name}</div>
+              <div className="text-sm opacity-70 mt-1">
+                Browse {name.toLowerCase()}.
+              </div>
+            </a>
+          ))}
         </div>
-        <div className="rounded-2xl border p-5">
-          <h2 className="text-lg font-medium">Welding</h2>
-          <p className="text-sm text-slate-600">
-            Machines, helmets, electrodes, consumables.
-          </p>
-        </div>
-        <div className="rounded-2xl border p-5">
-          <h2 className="text-lg font-medium">Safety</h2>
-          <p className="text-sm text-slate-600">PPE, gloves, helmets, vests.</p>
-        </div>
-      </div>
+      </section>
 
-      <div className="mt-10">
-        <Link
-          href="/"
-          className="inline-block rounded-lg bg-blue-600 px-4 py-2 text-white"
-        >
-          Back to Home
-        </Link>
+      {/* Brands */}
+      <section className="space-y-4">
+        <h2 className="text-xl font-semibold">Brands</h2>
+        <div className="grid md:grid-cols-4 gap-4">
+          {brandNames.map((name) => (
+            <a
+              key={name}
+              href="/brands"
+              className="block rounded-xl border p-6 text-center hover:shadow-sm transition"
+            >
+              <div className="font-medium">{name}</div>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <div className="pt-6">
+        <a href="/" className="btn-primary">Back to Home</a>
       </div>
-    </main>
+    </div>
   );
 }
