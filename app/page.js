@@ -1,76 +1,86 @@
-export const revalidate = 60; // ISR every 60s
+// app/page.js
+import Link from "next/link";
+import { getHomeData } from "@/lib/api";
 
-async function getData() {
-  const base = process.env.NEXT_PUBLIC_CMS_URL || 'http://localhost:1337';
+export const revalidate = 300; // ISR for the whole page
 
-  const [catsRes, brandsRes] = await Promise.all([
-    fetch(`${base}/api/categories?populate=icon&pagination[pageSize]=12`, { next: { revalidate: 60 } }),
-    fetch(`${base}/api/brands?populate=logo&pagination[pageSize]=12`, { next: { revalidate: 60 } }),
-  ]);
-
-  if (!catsRes.ok || !brandsRes.ok) {
-    return { categories: [], brands: [] }; // don’t fail build if Strapi is empty
-  }
-
-  const [catsJson, brandsJson] = await Promise.all([catsRes.json(), brandsRes.json()]);
-  return {
-    categories: catsJson?.data ?? [],
-    brands: brandsJson?.data ?? [],
-  };
-}
-
-export default async function HomePage() {
-  const { categories, brands } = await getData();
+export default async function Home() {
+  const { categories, brands } = await getHomeData();
 
   return (
-    <div className="container-narrow py-10 space-y-16">
-      {/* Hero (we’ll replace with slider later) */}
-      <section className="rounded-2xl border p-8">
-        <h1 className="text-2xl md:text-3xl font-semibold">
-          Adams Tool House — Tools & Industrial Supplies in UAE
-        </h1>
-        <p className="opacity-80 mt-2">
-          Power tools, safety products, construction equipment & accessories.
-        </p>
+    <>
+      {/* HERO */}
+      <section className="border-b">
+        <div className="container-narrow py-14 md:py-20">
+          <div className="bg-primary/5 rounded-xl p-8 md:p-12">
+            <h1 className="text-3xl md:text-5xl font-semibold mb-4">
+              Industrial Tools & Machinery
+            </h1>
+            <p className="text-lg opacity-80 mb-6">
+              Power tools, compressors, welding, safety & more.
+            </p>
+            <div className="flex gap-3">
+              <Link href="/products" className="btn-primary">Browse Products</Link>
+              <a
+                href="https://wa.me/971558763747"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-outline"
+              >
+                WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* Categories */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Shop by Category</h2>
-          <a href="/categories" className="text-sm underline">View all</a>
+      {/* TOP CATEGORIES (from Strapi, with fallback) */}
+      <section className="container-narrow py-12 md:py-16">
+        <h2 className="text-2xl font-semibold mb-6">Top Categories</h2>
+        <div className="grid md:grid-cols-3 gap-5">
+          {(categories.length
+            ? categories
+            : [
+                { id: "fallback-1", attributes: { name: "Power Tools", slug: "power-tools", description: "Drills, saws, grinders, and more." } },
+                { id: "fallback-2", attributes: { name: "Welding", slug: "welding", description: "Welders, helmets, electrodes, consumables." } },
+                { id: "fallback-3", attributes: { name: "Safety", slug: "safety", description: "PPE, gloves, helmets, vests." } },
+              ]
+          ).map((c) => (
+            <Link
+              key={c.id}
+              href={`/categories/${c.attributes.slug}`}
+              className="block rounded-xl border p-6 hover:shadow-sm transition"
+            >
+              <div className="font-semibold mb-1">{c.attributes.name}</div>
+              <div className="opacity-70 text-sm">{c.attributes.description}</div>
+            </Link>
+          ))}
         </div>
-        {categories.length === 0 ? (
-          <p className="opacity-70">No categories yet. Add some in Strapi & publish.</p>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {categories.map((c) => (
-              <a key={c.id} href={`/categories/${c.attributes.slug}`} className="border rounded-xl p-4 hover:shadow">
-                <div className="text-sm font-medium">{c.attributes.name}</div>
-              </a>
-            ))}
-          </div>
-        )}
       </section>
 
-      {/* Brands */}
-      <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Featured Brands</h2>
-          <a href="/brands" className="text-sm underline">View all</a>
+      {/* BRANDS (from Strapi, with fallback) */}
+      <section className="container-narrow pb-16">
+        <h2 className="text-2xl font-semibold mb-6">Brands</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {(brands.length
+            ? brands
+            : [
+                { id: "brand-1", attributes: { name: "Bosch" } },
+                { id: "brand-2", attributes: { name: "Makita" } },
+                { id: "brand-3", attributes: { name: "Dewalt" } },
+                { id: "brand-4", attributes: { name: "3M" } },
+              ]
+          ).map((b) => (
+            <div
+              key={b.id}
+              className="rounded-lg border p-4 text-center bg-white"
+              title={b.attributes.name}
+            >
+              <span className="font-medium">{b.attributes.name}</span>
+            </div>
+          ))}
         </div>
-        {brands.length === 0 ? (
-          <p className="opacity-70">No brands yet. Add some in Strapi & publish.</p>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-8 gap-4">
-            {brands.map((b) => (
-              <a key={b.id} href={`/brands/${b.attributes.slug}`} className="border rounded-xl p-4 hover:shadow flex items-center justify-center">
-                <span className="text-sm font-medium">{b.attributes.name}</span>
-              </a>
-            ))}
-          </div>
-        )}
       </section>
-    </div>
+    </>
   );
 }
