@@ -1,6 +1,6 @@
 // app/page.js
 import Link from "next/link";
-import { getHomeData } from "@/lib/api";
+import { getHomeData } from "../lib/api";
 
 export const revalidate = 300; // ISR for the whole page
 
