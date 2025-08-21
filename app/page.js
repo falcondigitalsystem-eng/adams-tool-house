@@ -1,12 +1,9 @@
 // app/page.js
 import Link from "next/link";
 import { getHomeData } from "../lib/api";
-
 export const revalidate = 300; // ISR for the whole page
-
 export default async function Home() {
   const { categories, brands } = await getHomeData();
-
   return (
     <>
       {/* HERO */}
