@@ -1,12 +1,12 @@
 // app/products/page.js
-export const revalidate = 60; // ISR: refresh data every 60s
+export const revalidate = 60; // refresh every 60s
 
 const CMS = process.env.NEXT_PUBLIC_CMS_URL;
 
-// Helper: load categories & brands from Strapi with safe fallbacks
 async function getData() {
   const safeFetch = async (url) => {
     try {
+      if (!url || url.startsWith("undefined")) return { data: [] };
       const res = await fetch(url, { next: { revalidate: 60 } });
       if (!res.ok) return { data: [] };
       return res.json();
@@ -15,22 +15,27 @@ async function getData() {
     }
   };
 
-  const catURL = `${CMS}/api/categories?fields[0]=name&sort=name`;
-  const brandURL = `${CMS}/api/brands?fields[0]=name&sort=name`;
+  const catsURL = `${CMS}/api/categories?fields[0]=name&sort=name&pagination[pageSize]=100`;
+  const brandsURL = `${CMS}/api/brands?fields[0]=name&sort=name&pagination[pageSize]=100`;
 
   const [{ data: cats }, { data: brands }] = await Promise.all([
-    safeFetch(catURL),
-    safeFetch(brandURL),
+    safeFetch(catsURL),
+    safeFetch(brandsURL),
   ]);
 
-  // Fallbacks if CMS is empty / offline
-  const categoryNames =
-    cats?.map((c) => c?.attributes?.name).filter(Boolean)?.slice(0, 12) ??
-    ["Power Tools", "Welding", "Safety"];
+  let categoryNames =
+    (cats || [])
+      .map((c) => c?.attributes?.name)
+      .filter(Boolean);
 
-  const brandNames =
-    brands?.map((b) => b?.attributes?.name).filter(Boolean)?.slice(0, 12) ??
-    ["Bosch", "Makita", "Dewalt", "3M"];
+  let brandNames =
+    (brands || [])
+      .map((b) => b?.attributes?.name)
+      .filter(Boolean);
+
+  // HARD fallbacks so the page never looks empty
+  if (!categoryNames?.length) categoryNames = ["Power Tools", "Welding", "Safety"];
+  if (!brandNames?.length) brandNames = ["Bosch", "Makita", "Dewalt", "3M"];
 
   return { categoryNames, brandNames };
 }
